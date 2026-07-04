@@ -1,0 +1,184 @@
+{
+  "info": {
+    "name": "EduVerify AI",
+    "description": "API collection for EduVerify AI Candidate Intelligence, Credential Verification, and Recruiter Workflow Platform.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1" },
+    { "key": "candidateToken", "value": "" },
+    { "key": "hrToken", "value": "" },
+    { "key": "candidateId", "value": "" },
+    { "key": "documentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Candidate Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"candidate@eduverify.ai\",\n  \"password\": \"Candidate@123\"\n}" }
+          }
+        },
+        {
+          "name": "HR Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"hr@eduverify.ai\",\n  \"password\": \"HR@123456\"\n}" }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{candidateToken}}" }],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{candidateToken}}" }],
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Candidate",
+      "item": [
+        {
+          "name": "Candidate Workspace",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{candidateToken}}" }],
+            "url": "{{baseUrl}}/candidates/me"
+          }
+        },
+        {
+          "name": "Candidate Report",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{candidateToken}}" }],
+            "url": "{{baseUrl}}/candidates/me/report"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "List Documents",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{candidateToken}}" }],
+            "url": "{{baseUrl}}/documents"
+          }
+        },
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{candidateToken}}" }],
+            "url": "{{baseUrl}}/documents/upload",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "type", "value": "resume", "type": "text" },
+                { "key": "document", "type": "file", "src": [] }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace Document",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{candidateToken}}" }],
+            "url": "{{baseUrl}}/documents/{{documentId}}/replace",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "type", "value": "resume", "type": "text" },
+                { "key": "document", "type": "file", "src": [] }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "HR",
+      "item": [
+        {
+          "name": "Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{hrToken}}" }],
+            "url": "{{baseUrl}}/hr/analytics"
+          }
+        },
+        {
+          "name": "Candidate Explorer",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{hrToken}}" }],
+            "url": "{{baseUrl}}/hr/candidates?internshipVerified=false"
+          }
+        },
+        {
+          "name": "Candidate Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{hrToken}}" }],
+            "url": "{{baseUrl}}/hr/candidates/{{candidateId}}"
+          }
+        },
+        {
+          "name": "Approve Candidate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{hrToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/hr/candidates/{{candidateId}}/action",
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"approve\"\n}" }
+          }
+        },
+        {
+          "name": "Reject Candidate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{hrToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/hr/candidates/{{candidateId}}/action",
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"reject\"\n}" }
+          }
+        },
+        {
+          "name": "Request Clarification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{hrToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/hr/candidates/{{candidateId}}/clarifications",
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"Please upload internship proof.\"\n}" }
+          }
+        }
+      ]
+    }
+  ]
+}
