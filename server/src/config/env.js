@@ -7,7 +7,7 @@ const devJwtSecret = "eduverify-dev-secret-change-me";
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 8000),
-  clientUrl: process.env.CLIENT_URL || "https://document-verification-yhb1-q46qlti7q.vercel.app",
+  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
   mongoUri: process.env.MONGODB_URI || "",
   jwtSecret: process.env.JWT_SECRET || devJwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
