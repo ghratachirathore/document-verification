@@ -21,7 +21,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/auth/login",
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"candidate@eduverify.ai\",\n  \"password\": \"Candidate@123\"\n}" }
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"candidate@eduverify.ai\",\n  \"password\": \"EduVfy-Candidate-2026!p9Q4zL2\"\n}" }
           }
         },
         {
@@ -30,7 +30,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/auth/login",
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"hr@eduverify.ai\",\n  \"password\": \"HR@123456\"\n}" }
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"hr@eduverify.ai\",\n  \"password\": \"EduVfy-Recruiter-2026!R7mK8sT3\"\n}" }
           }
         },
         {

@@ -23,7 +23,9 @@ export const CandidateExplorerPage = () => {
     search: params.get("search") || "",
     skill: params.get("skill") || "",
     branch: params.get("branch") || "",
+    degree: params.get("degree") || "",
     status: params.get("status") || "",
+    riskLevel: params.get("riskLevel") || "",
     minCgpa: params.get("minCgpa") || "",
     maxCgpa: params.get("maxCgpa") || "",
     internshipVerified: params.get("internshipVerified") || "",
@@ -57,7 +59,9 @@ export const CandidateExplorerPage = () => {
       search: "",
       skill: "",
       branch: "",
+      degree: "",
       status: "",
+      riskLevel: "",
       minCgpa: "",
       maxCgpa: "",
       internshipVerified: "",
@@ -80,10 +84,11 @@ export const CandidateExplorerPage = () => {
         <div className="filter-bar expanded">
           <label>
             <Search size={16} />
-            <input name="search" placeholder="Search name, skill, branch, status" value={filters.search} onChange={update} />
+            <input name="search" placeholder="Search name, degree, skill, branch, status" value={filters.search} onChange={update} aria-label="Search candidates" />
           </label>
           <input name="skill" placeholder="Skill" value={filters.skill} onChange={update} aria-label="Filter by skill" />
           <input name="branch" placeholder="Branch" value={filters.branch} onChange={update} aria-label="Filter by branch" />
+          <input name="degree" placeholder="Degree" value={filters.degree} onChange={update} aria-label="Filter by degree" />
           <input name="minCgpa" placeholder="Min CGPA" value={filters.minCgpa} onChange={update} inputMode="decimal" aria-label="Minimum CGPA" />
           <input name="maxCgpa" placeholder="Max CGPA" value={filters.maxCgpa} onChange={update} inputMode="decimal" aria-label="Maximum CGPA" />
           <select name="status" value={filters.status} onChange={update}>
@@ -92,6 +97,13 @@ export const CandidateExplorerPage = () => {
             <option value="Verified With Minor Differences">Verified With Minor Differences</option>
             <option value="Needs Review">Needs Review</option>
             <option value="High Risk Inconsistency">High Risk Inconsistency</option>
+          </select>
+          <select name="riskLevel" value={filters.riskLevel} onChange={update} aria-label="Filter by risk level">
+            <option value="">Risk level</option>
+            <option value="low">Low risk</option>
+            <option value="minor">Minor differences</option>
+            <option value="review">Needs review</option>
+            <option value="high">High risk</option>
           </select>
           <select name="internshipVerified" value={filters.internshipVerified} onChange={update}>
             <option value="">Internship evidence</option>
@@ -122,6 +134,7 @@ export const CandidateExplorerPage = () => {
 
       <Section title={`Candidate List (${candidates.length})`}>
         <DataTable
+          emptyText="No candidates match the selected filters"
           columns={[
             {
               key: "name",
@@ -133,6 +146,7 @@ export const CandidateExplorerPage = () => {
                 </div>
               )
             },
+            { key: "degree", label: "Degree", render: (row) => row.candidateProfile?.degree || "Not extracted" },
             { key: "branch", label: "Branch", render: (row) => row.candidateProfile?.branch || "Not extracted" },
             { key: "cgpa", label: "CGPA", render: (row) => row.candidateProfile?.cgpa || "-" },
             {

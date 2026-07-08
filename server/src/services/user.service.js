@@ -1,4 +1,5 @@
 import { isMongoEnabled } from "../config/env.js";
+import { VERIFICATION_STATUS } from "../constants/status.constants.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { isValidMongoObjectId } from "../utils/validators.js";
@@ -10,6 +11,16 @@ const sanitizeUser = (user) => {
   const { password, ...safeUser } = plain;
   return safeUser;
 };
+
+const riskStatusMap = {
+  low: VERIFICATION_STATUS.VERIFIED,
+  minor: VERIFICATION_STATUS.MINOR_DIFFERENCES,
+  review: VERIFICATION_STATUS.NEEDS_REVIEW,
+  high: VERIFICATION_STATUS.HIGH_RISK
+};
+
+const escapeRegex = (value) => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const textRegex = (value) => new RegExp(escapeRegex(value), "i");
 
 export const userService = {
   async createUser(payload) {
@@ -55,8 +66,12 @@ export const userService = {
     if (!isMongoEnabled) return demoStore.listCandidates(filters);
 
     const query = { role: "candidate" };
-    if (filters.status) query["candidateProfile.verificationStatus"] = filters.status;
-    if (filters.branch) query["candidateProfile.branch"] = new RegExp(filters.branch, "i");
+    const riskStatus = filters.riskLevel ? riskStatusMap[filters.riskLevel] : null;
+    if (filters.status && riskStatus && filters.status !== riskStatus) query["candidateProfile.verificationStatus"] = "__no_status_match__";
+    else if (riskStatus) query["candidateProfile.verificationStatus"] = riskStatus;
+    else if (filters.status) query["candidateProfile.verificationStatus"] = filters.status;
+    if (filters.branch) query["candidateProfile.branch"] = textRegex(filters.branch);
+    if (filters.degree) query["candidateProfile.degree"] = textRegex(filters.degree);
     if (filters.minCgpa || filters.maxCgpa) {
       query["candidateProfile.cgpa"] = {};
       if (filters.minCgpa) query["candidateProfile.cgpa"].$gte = Number(filters.minCgpa);
@@ -64,13 +79,16 @@ export const userService = {
     }
     if (filters.search) {
       query.$or = [
-        { name: new RegExp(filters.search, "i") },
-        { "candidateProfile.extractedName": new RegExp(filters.search, "i") },
-        { "candidateProfile.branch": new RegExp(filters.search, "i") },
-        { "candidateProfile.skills": new RegExp(filters.search, "i") }
+        { name: textRegex(filters.search) },
+        { "candidateProfile.extractedName": textRegex(filters.search) },
+        { "candidateProfile.degree": textRegex(filters.search) },
+        { "candidateProfile.branch": textRegex(filters.search) },
+        { "candidateProfile.verificationStatus": textRegex(filters.search) },
+        { "candidateProfile.issues": textRegex(filters.search) },
+        { "candidateProfile.skills": textRegex(filters.search) }
       ];
     }
-    if (filters.skill) query["candidateProfile.skills"] = new RegExp(filters.skill, "i");
+    if (filters.skill) query["candidateProfile.skills"] = textRegex(filters.skill);
     if (filters.internshipVerified === "true") query["candidateProfile.internships.hasProof"] = true;
     if (filters.internshipVerified === "false") query["candidateProfile.internships.hasProof"] = { $ne: true };
     if (filters.awaitingReview === "true") query["candidateProfile.hrDecision"] = "pending";

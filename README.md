@@ -51,10 +51,10 @@ Demo mode works when MongoDB, Cloudinary, or Gemini credentials are missing.
 
 | Role | Email | Password |
 |---|---|---|
-| Candidate | `candidate@eduverify.ai` | `Candidate@123` |
-| HR | `hr@eduverify.ai` | `HR@123456` |
+| Candidate | `candidate@eduverify.ai` | `EduVfy-Candidate-2026!p9Q4zL2` |
+| Reviewer | `hr@eduverify.ai` | `EduVfy-Recruiter-2026!R7mK8sT3` |
 
-Chrome may show “Password found in a data breach” when these public demo passwords are used. That warning comes from Chrome Password Manager checking known compromised passwords; EduVerify AI hashes passwords with bcrypt and never stores plaintext passwords.
+Chrome Password Manager may warn users when they choose a password that appears in known breaches. EduVerify AI hashes passwords with bcrypt and never stores plaintext passwords.
 
 ## Quick Start
 
@@ -72,6 +72,8 @@ API: `http://localhost:8000/api/v1`
 npm test --prefix server
 npm run build --prefix client
 ```
+
+Tests run in deterministic demo mode, so they do not depend on a reachable MongoDB connection.
 
 ## Documentation
 

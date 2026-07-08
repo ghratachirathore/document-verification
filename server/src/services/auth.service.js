@@ -13,9 +13,15 @@ export const authService = {
   cookieOptions() {
     return {
       httpOnly: true,
-      sameSite: "lax",
-      secure: env.nodeEnv === "production"
+      sameSite: env.nodeEnv === "production" ? "none" : "lax",
+      secure: env.nodeEnv === "production",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000
     };
+  },
+  clearCookieOptions() {
+    const { maxAge, ...options } = this.cookieOptions();
+    return options;
   },
   async register({ name, email, password, role = USER_ROLES.CANDIDATE }) {
     if (!Object.values(USER_ROLES).includes(role)) {

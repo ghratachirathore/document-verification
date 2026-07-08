@@ -22,7 +22,7 @@ Authentication:
 {
   "name": "Candidate Name",
   "email": "candidate@example.com",
-  "password": "Candidate@123",
+  "password": "EduVfy-Candidate-2026!p9Q4zL2",
   "role": "candidate"
 }
 ```
@@ -34,7 +34,7 @@ Authentication:
 ```json
 {
   "email": "hr@eduverify.ai",
-  "password": "HR@123456"
+  "password": "EduVfy-Recruiter-2026!R7mK8sT3"
 }
 ```
 
@@ -116,7 +116,9 @@ Supported query params:
 - `search`
 - `skill`
 - `branch`
+- `degree`
 - `status`
+- `riskLevel=low|minor|review|high`
 - `minCgpa`
 - `maxCgpa`
 - `internshipVerified=true|false`

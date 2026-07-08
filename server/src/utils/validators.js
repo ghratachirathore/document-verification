@@ -22,6 +22,8 @@ export const isValidResourceId = (value) => isNonEmptyString(value) && (isValidM
 
 export const isOptionalNumber = (value) => value === undefined || value === "" || Number.isFinite(Number(value));
 
+export const isValidRiskLevel = (value) => value === undefined || value === "" || ["low", "minor", "review", "high"].includes(value);
+
 export const normalizeEmail = (value) => value.trim().toLowerCase();
 
 export const normalizeString = (value) => (typeof value === "string" ? value.trim() : value);

@@ -11,10 +11,14 @@ export const errorHandler = (err, req, res, next) => {
         : err.message;
   const error = err instanceof ApiError ? err : new ApiError(statusCode, message);
 
+  const authMeta = req.originalUrl.startsWith("/api/v1/auth")
+    ? { origin: req.get("origin") || "same-origin", email: req.body?.email, role: req.body?.role }
+    : undefined;
+
   if (error.statusCode >= 500) {
     logger.error(`${req.method} ${req.originalUrl} failed`, err);
   } else {
-    logger.debug(`${req.method} ${req.originalUrl} rejected`, { statusCode: error.statusCode, message: error.message });
+    logger.debug(`${req.method} ${req.originalUrl} rejected`, { statusCode: error.statusCode, message: error.message, ...authMeta });
   }
 
   return res.status(error.statusCode).json({

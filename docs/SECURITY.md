@@ -69,6 +69,8 @@ Production must provide:
 
 The server refuses production startup with the development JWT fallback secret.
 
+Example env files must contain placeholders only. If any real MongoDB, Cloudinary, Gemini, or JWT value has been exposed, rotate it in the provider dashboard and update the deployment platform variables.
+
 ## External Services
 
 - Cloudinary stores uploaded documents.

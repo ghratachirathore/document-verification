@@ -1,11 +1,11 @@
-import { GraduationCap, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getApiErrorMessage } from "../api/http.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const demoCredentials = [
-  { label: "Candidate", email: "candidate@eduverify.ai", password: "Candidate@123" },
-  { label: "HR", email: "hr@eduverify.ai", password: "HR@123456" }
+  { label: "Candidate", email: "candidate@eduverify.ai", password: "EduVfy-Candidate-2026!p9Q4zL2" },
+  { label: "Reviewer", email: "hr@eduverify.ai", password: "EduVfy-Recruiter-2026!R7mK8sT3", role: "hr" }
 ];
 
 export const AuthPage = ({ mode }) => {
@@ -15,7 +15,7 @@ export const AuthPage = ({ mode }) => {
   const [form, setForm] = useState({
     name: "",
     email: isRegister ? "" : "candidate@eduverify.ai",
-    password: isRegister ? "" : "Candidate@123",
+    password: isRegister ? "" : "EduVfy-Candidate-2026!p9Q4zL2",
     role: "candidate"
   });
   const [error, setError] = useState("");
@@ -31,7 +31,7 @@ export const AuthPage = ({ mode }) => {
       const user = isRegister ? await register(form) : await login(form.email, form.password);
       navigate(user.role === "hr" ? "/hr" : "/candidate");
     } catch (err) {
-      const message = err.response?.data?.message;
+      const message = getApiErrorMessage(err, "");
       setError(message || (isRegister ? "Account creation failed. Check the details and try again." : "Sign in failed. Check your email and password."));
     } finally {
       setSubmitting(false);
@@ -43,7 +43,7 @@ export const AuthPage = ({ mode }) => {
       ...current,
       email: credential.email,
       password: credential.password,
-      role: credential.label === "HR" ? "hr" : "candidate"
+      role: credential.role || "candidate"
     }));
   };
 
@@ -55,21 +55,18 @@ export const AuthPage = ({ mode }) => {
             <div className="brand-icon">EV</div>
             <div>
               <strong>EduVerify AI</strong>
-              <span>Candidate intelligence for HR teams</span>
+              <span>Credential Verification Platform</span>
             </div>
           </div>
-          <h1>Credential review that feels ready for hiring teams.</h1>
+          <h1>AI-powered credential intelligence for modern verification.</h1>
           <p>
-            Upload academic and professional documents, extract structured facts, run deterministic checks, and move
-            candidates through a clear review lifecycle.
+            Upload academic and professional evidence, extract structured facts, and track each verification step with
+            clarity.
           </p>
-          <div className="auth-assurance">
-            <span>
-              <ShieldCheck size={18} /> AI extracts
-            </span>
-            <span>
-              <GraduationCap size={18} /> Backend verifies
-            </span>
+          <div className="auth-visual">
+            <span>Verified</span>
+            <strong>94%</strong>
+            <small>Average credential confidence across demo profiles</small>
           </div>
         </div>
         <form className="auth-form" onSubmit={submit}>
@@ -85,7 +82,7 @@ export const AuthPage = ({ mode }) => {
                 Role
                 <select name="role" value={form.role} onChange={update} aria-label="Account role">
                   <option value="candidate">Candidate</option>
-                  <option value="hr">HR</option>
+                  <option value="hr">Reviewer</option>
                 </select>
               </label>
             </>

@@ -5,10 +5,16 @@ import { DOCUMENT_TYPES, HR_DECISIONS, USER_ROLES, VERIFICATION_STATUS } from ".
 const createId = () => crypto.randomUUID();
 const daysAgo = (days) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 const today = new Date();
-const candidatePassword = await bcrypt.hash("Candidate@123", 10);
-const hrPassword = await bcrypt.hash("HR@123456", 10);
+const candidatePassword = await bcrypt.hash("EduVfy-Candidate-2026!p9Q4zL2", 10);
+const hrPassword = await bcrypt.hash("EduVfy-Recruiter-2026!R7mK8sT3", 10);
 
 const matches = (value, query) => String(value || "").toLowerCase().includes(String(query || "").toLowerCase());
+const riskStatusMap = {
+  low: VERIFICATION_STATUS.VERIFIED,
+  minor: VERIFICATION_STATUS.MINOR_DIFFERENCES,
+  review: VERIFICATION_STATUS.NEEDS_REVIEW,
+  high: VERIFICATION_STATUS.HIGH_RISK
+};
 
 const recommendedAction = (score) => {
   if (score >= 95) return "No action required";
@@ -724,7 +730,9 @@ export const demoStore = {
       .filter((candidate) => {
         const profile = candidate.candidateProfile || {};
         if (filters.status && profile.verificationStatus !== filters.status) return false;
+        if (filters.riskLevel && riskStatusMap[filters.riskLevel] && profile.verificationStatus !== riskStatusMap[filters.riskLevel]) return false;
         if (filters.branch && !matches(profile.branch, filters.branch)) return false;
+        if (filters.degree && !matches(profile.degree, filters.degree)) return false;
         if (filters.skill && !profile.skills?.some((skill) => matches(skill, filters.skill))) return false;
         if (filters.minCgpa && Number(profile.cgpa || 0) < Number(filters.minCgpa)) return false;
         if (filters.maxCgpa && Number(profile.cgpa || 0) > Number(filters.maxCgpa)) return false;
@@ -734,7 +742,16 @@ export const demoStore = {
         if (filters.awaitingReview === "true" && profile.hrDecision !== HR_DECISIONS.PENDING) return false;
         if (filters.clarificationPending === "true" && !profile.clarifications?.some((item) => item.status === "open")) return false;
         if (filters.search) {
-          const haystack = [candidate.name, profile.extractedName, profile.branch, profile.verificationStatus, ...(profile.skills || [])].join(" ");
+          const haystack = [
+            candidate.name,
+            profile.extractedName,
+            profile.degree,
+            profile.branch,
+            profile.verificationStatus,
+            profile.hrDecision,
+            ...(profile.issues || []),
+            ...(profile.skills || [])
+          ].join(" ");
           if (!matches(haystack, filters.search)) return false;
         }
         return true;

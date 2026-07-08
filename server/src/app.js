@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { rateLimit } from "./middlewares/rateLimit.middleware.js";
+import { logger } from "./utils/logger.js";
 import authRoutes from "./routes/auth.routes.js";
 import candidateRoutes from "./routes/candidate.routes.js";
 import documentRoutes from "./routes/document.routes.js";
@@ -16,7 +17,11 @@ app.disable("x-powered-by");
 
 app.use(
   cors({
-    origin: env.clientUrl,
+    origin(origin, callback) {
+      if (!origin || env.clientUrls.includes(origin)) return callback(null, true);
+      logger.warn("CORS origin rejected", { origin, allowedOrigins: env.clientUrls });
+      return callback(null, false);
+    },
     credentials: true
   })
 );

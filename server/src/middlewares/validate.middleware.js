@@ -7,6 +7,7 @@ import {
   isValidEmail,
   isValidHrAction,
   isValidResourceId,
+  isValidRiskLevel,
   isValidRole,
   normalizeEmail,
   normalizeString
@@ -83,8 +84,9 @@ export const validateClarification = (req, res, next) => {
 export const validateCandidateFilters = (req, res, next) => {
   if (!isOptionalNumber(req.query.minCgpa)) fail("minCgpa must be numeric");
   if (!isOptionalNumber(req.query.maxCgpa)) fail("maxCgpa must be numeric");
+  if (!isValidRiskLevel(req.query.riskLevel)) fail("Invalid riskLevel");
 
-  ["search", "skill", "branch", "status"].forEach((key) => {
+  ["search", "skill", "branch", "degree", "status", "riskLevel"].forEach((key) => {
     if (req.query[key]) req.query[key] = normalizeString(req.query[key]);
   });
 

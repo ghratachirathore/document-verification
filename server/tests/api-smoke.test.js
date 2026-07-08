@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import jwt from "jsonwebtoken";
 import request from "supertest";
 import { app } from "../src/app.js";
+import { env } from "../src/config/env.js";
+import { authService } from "../src/services/auth.service.js";
 
 const uniqueEmail = () => `candidate.${Date.now()}.${Math.random().toString(36).slice(2)}@eduverify.ai`;
 
@@ -10,7 +13,7 @@ test("auth endpoints support register, login, me, logout and reject malformed to
 
   const registerResponse = await request(app)
     .post("/api/v1/auth/register")
-    .send({ name: "Smoke Candidate", email, password: "Candidate@123", role: "candidate" })
+    .send({ name: "Smoke Candidate", email, password: "EduVfy-Candidate-2026!p9Q4zL2", role: "candidate" })
     .expect(201);
 
   assert.equal(registerResponse.body.success, true);
@@ -19,7 +22,7 @@ test("auth endpoints support register, login, me, logout and reject malformed to
 
   const loginResponse = await request(app)
     .post("/api/v1/auth/login")
-    .send({ email, password: "Candidate@123" })
+    .send({ email, password: "EduVfy-Candidate-2026!p9Q4zL2" })
     .expect(200);
 
   const token = loginResponse.body.data.token;
@@ -30,6 +33,10 @@ test("auth endpoints support register, login, me, logout and reject malformed to
 
   await request(app).get("/api/v1/auth/me").set("Authorization", `Token ${token}`).expect(401);
 
+  const expiredToken = jwt.sign({ id: registerResponse.body.data.user._id, email, role: "candidate" }, env.jwtSecret, { expiresIn: "-1s" });
+  const expiredResponse = await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${expiredToken}`).expect(401);
+  assert.equal(expiredResponse.body.message, "Access token expired");
+
   const logoutResponse = await request(app).post("/api/v1/auth/logout").set("Authorization", `Bearer ${token}`).expect(200);
   assert.equal(logoutResponse.body.data.loggedOut, true);
 });
@@ -37,7 +44,7 @@ test("auth endpoints support register, login, me, logout and reject malformed to
 test("candidate document workflow endpoints process upload, list documents, and return report", async () => {
   const loginResponse = await request(app)
     .post("/api/v1/auth/login")
-    .send({ email: "candidate@eduverify.ai", password: "Candidate@123" })
+    .send({ email: "candidate@eduverify.ai", password: "EduVfy-Candidate-2026!p9Q4zL2" })
     .expect(200);
 
   const token = loginResponse.body.data.token;
@@ -72,7 +79,7 @@ test("candidate document workflow endpoints process upload, list documents, and 
 test("HR endpoints expose analytics, candidate detail, filtering, and decisions", async () => {
   const loginResponse = await request(app)
     .post("/api/v1/auth/login")
-    .send({ email: "hr@eduverify.ai", password: "HR@123456" })
+    .send({ email: "hr@eduverify.ai", password: "EduVfy-Recruiter-2026!R7mK8sT3" })
     .expect(200);
 
   const token = loginResponse.body.data.token;
@@ -88,6 +95,14 @@ test("HR endpoints expose analytics, candidate detail, filtering, and decisions"
 
   assert.ok(Array.isArray(listResponse.body.data.candidates));
   const candidateId = listResponse.body.data.candidates[0]._id;
+
+  const degreeFilter = await request(app)
+    .get("/api/v1/hr/candidates")
+    .query({ degree: "Bachelor", riskLevel: "review" })
+    .set("Authorization", `Bearer ${token}`)
+    .expect(200);
+  assert.ok(degreeFilter.body.data.candidates.every((candidate) => candidate.candidateProfile.degree.includes("Bachelor")));
+  assert.ok(degreeFilter.body.data.candidates.every((candidate) => candidate.candidateProfile.verificationStatus === "Needs Review"));
 
   const detailResponse = await request(app).get(`/api/v1/hr/candidates/${candidateId}`).set("Authorization", `Bearer ${token}`).expect(200);
   assert.equal(detailResponse.body.data.candidate._id, candidateId);
@@ -113,10 +128,11 @@ test("validation rejects invalid auth, filters, HR actions, and document types",
     .send({ name: "Bad User", email: "not-an-email", password: "short", role: "candidate" })
     .expect(400);
 
-  const hrLogin = await request(app).post("/api/v1/auth/login").send({ email: "hr@eduverify.ai", password: "HR@123456" }).expect(200);
+  const hrLogin = await request(app).post("/api/v1/auth/login").send({ email: "hr@eduverify.ai", password: "EduVfy-Recruiter-2026!R7mK8sT3" }).expect(200);
   const hrToken = hrLogin.body.data.token;
 
   await request(app).get("/api/v1/hr/candidates").query({ minCgpa: "abc" }).set("Authorization", `Bearer ${hrToken}`).expect(400);
+  await request(app).get("/api/v1/hr/candidates").query({ riskLevel: "severe" }).set("Authorization", `Bearer ${hrToken}`).expect(400);
 
   const candidates = await request(app).get("/api/v1/hr/candidates").set("Authorization", `Bearer ${hrToken}`).expect(200);
   const candidateId = candidates.body.data.candidates[0]._id;
@@ -129,7 +145,7 @@ test("validation rejects invalid auth, filters, HR actions, and document types",
 
   const candidateLogin = await request(app)
     .post("/api/v1/auth/login")
-    .send({ email: "candidate@eduverify.ai", password: "Candidate@123" })
+    .send({ email: "candidate@eduverify.ai", password: "EduVfy-Candidate-2026!p9Q4zL2" })
     .expect(200);
   const candidateToken = candidateLogin.body.data.token;
 
@@ -142,4 +158,31 @@ test("validation rejects invalid auth, filters, HR actions, and document types",
       contentType: "application/pdf"
     })
     .expect(400);
+});
+
+test("deployment auth settings support CORS preflight and production cookies", async () => {
+  const preflight = await request(app)
+    .options("/api/v1/auth/login")
+    .set("Origin", "http://localhost:5173")
+    .set("Access-Control-Request-Method", "POST")
+    .expect(204);
+
+  assert.equal(preflight.headers["access-control-allow-origin"], "http://localhost:5173");
+  assert.equal(preflight.headers["access-control-allow-credentials"], "true");
+
+  const rejectedPreflight = await request(app)
+    .options("/api/v1/auth/login")
+    .set("Origin", "https://untrusted.example.com")
+    .set("Access-Control-Request-Method", "POST");
+
+  assert.ok([200, 204].includes(rejectedPreflight.status));
+  assert.equal(rejectedPreflight.headers["access-control-allow-origin"], undefined);
+
+  const previousNodeEnv = env.nodeEnv;
+  env.nodeEnv = "production";
+  const options = authService.cookieOptions();
+  env.nodeEnv = previousNodeEnv;
+
+  assert.equal(options.sameSite, "none");
+  assert.equal(options.secure, true);
 });
