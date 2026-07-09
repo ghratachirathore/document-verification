@@ -1,7 +1,30 @@
 import axios from "axios";
 
+const normalizeApiBaseUrl = (configuredUrl) => {
+  const fallbackBaseUrl = "/api/v1";
+  if (!configuredUrl) return fallbackBaseUrl;
+
+  const trimmed = configuredUrl.trim();
+  if (!trimmed) return fallbackBaseUrl;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      const pathname = parsed.pathname.replace(/\/+$/, "");
+      const basePath = pathname && pathname !== "/" ? pathname : "/api/v1";
+      return `${parsed.origin}${basePath.endsWith("/api/v1") ? basePath : `${basePath}/api/v1`}`;
+    } catch {
+      return `${trimmed.replace(/\/+$/, "")}/api/v1`;
+    }
+  }
+
+  const normalizedPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const cleanedPath = normalizedPath.replace(/\/+$/, "");
+  return cleanedPath.endsWith("/api/v1") ? cleanedPath : `${cleanedPath}/api/v1`;
+};
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://document-verification-r8ot.onrender.com",
+  baseURL: normalizeApiBaseUrl(import.meta.env.VITE_API_URL || ""),
   withCredentials: true
 });
 

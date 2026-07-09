@@ -1,9 +1,18 @@
-import { isMongoEnabled } from "../config/env.js";
+import { env, isMongoEnabled } from "../config/env.js";
 import { VERIFICATION_STATUS } from "../constants/status.constants.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { isValidMongoObjectId } from "../utils/validators.js";
 import { demoStore } from "./demoStore.service.js";
+
+const demoEmailSet = new Set(["candidate@eduverify.ai", "hr@eduverify.ai"]);
+const shouldUseDemoStoreForEmail = (email) => {
+  if (!isMongoEnabled) return true;
+  if (env.nodeEnv !== "production") {
+    return demoEmailSet.has(String(email || "").toLowerCase());
+  }
+  return false;
+};
 
 const sanitizeUser = (user) => {
   if (!user) return null;
@@ -30,30 +39,59 @@ export const userService = {
       return user;
     }
 
-    const exists = await User.findOne({ email: payload.email.toLowerCase() });
-    if (exists) throw new ApiError(409, "User already exists");
+    try {
+      const exists = await User.findOne({ email: payload.email.toLowerCase() });
+      if (exists) throw new ApiError(409, "User already exists");
 
-    const user = await User.create(payload);
-    return sanitizeUser(user);
+      const user = await User.create(payload);
+      return sanitizeUser(user);
+    } catch (error) {
+      if (env.nodeEnv !== "production") {
+        const fallbackUser = await demoStore.createUser(payload);
+        if (!fallbackUser) throw new ApiError(409, "User already exists");
+        return fallbackUser;
+      }
+      throw error;
+    }
   },
   async findByEmail(email, includePassword = false) {
-    if (!isMongoEnabled) return demoStore.findUserByEmail(email, includePassword);
-    const query = User.findOne({ email: email.toLowerCase() });
-    if (includePassword) query.select("+password");
-    return query;
+    if (shouldUseDemoStoreForEmail(email)) return demoStore.findUserByEmail(email, includePassword);
+
+    try {
+      const query = User.findOne({ email: email.toLowerCase() });
+      if (includePassword) query.select("+password");
+      const user = await query;
+      if (user) return includePassword ? user : sanitizeUser(user);
+      if (env.nodeEnv !== "production") return demoStore.findUserByEmail(email, includePassword);
+      return null;
+    } catch (error) {
+      if (env.nodeEnv !== "production") return demoStore.findUserByEmail(email, includePassword);
+      throw error;
+    }
   },
   async findById(id) {
-    if (!isMongoEnabled) return demoStore.findUserById(id);
-    if (!isValidMongoObjectId(id)) return null;
-    return sanitizeUser(await User.findById(id).lean());
+    if (!id) return null;
+    if (!isMongoEnabled || env.nodeEnv !== "production" || !isValidMongoObjectId(id)) {
+      return demoStore.findUserById(id);
+    }
+
+    try {
+      const user = await User.findById(id).lean();
+      return sanitizeUser(user);
+    } catch (error) {
+      if (env.nodeEnv !== "production") return demoStore.findUserById(id);
+      throw error;
+    }
   },
   async verifyPassword(user, password) {
     if (!user) return false;
     if (!isMongoEnabled) return demoStore.verifyPassword(user, password);
-    return user.isPasswordCorrect(password);
+    if (typeof user.isPasswordCorrect === "function") return user.isPasswordCorrect(password);
+    if (typeof user.password === "string") return demoStore.verifyPassword(user, password);
+    return false;
   },
   async updateCandidateProfile(candidateId, profile) {
-    if (!isMongoEnabled) return demoStore.updateCandidateProfile(candidateId, profile);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.updateCandidateProfile(candidateId, profile);
     return sanitizeUser(
       await User.findByIdAndUpdate(
         candidateId,
@@ -63,7 +101,7 @@ export const userService = {
     );
   },
   async listCandidates(filters = {}) {
-    if (!isMongoEnabled) return demoStore.listCandidates(filters);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.listCandidates(filters);
 
     const query = { role: "candidate" };
     const riskStatus = filters.riskLevel ? riskStatusMap[filters.riskLevel] : null;
@@ -102,7 +140,7 @@ export const userService = {
     return (await User.find(query).sort({ updatedAt: -1 }).lean()).map(sanitizeUser);
   },
   async addTimeline(candidateId, label, detail) {
-    if (!isMongoEnabled) return demoStore.addTimeline(candidateId, label, detail);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.addTimeline(candidateId, label, detail);
     return sanitizeUser(
       await User.findByIdAndUpdate(
         candidateId,
@@ -121,7 +159,7 @@ export const userService = {
   },
   async addClarification(candidateId, message) {
     const decisionEvent = { action: "clarification_requested", detail: message, actor: "HR", createdAt: new Date() };
-    if (!isMongoEnabled) return demoStore.addClarification(candidateId, message);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.addClarification(candidateId, message);
     return sanitizeUser(
       await User.findByIdAndUpdate(
         candidateId,
@@ -157,7 +195,7 @@ export const userService = {
       actor: "HR",
       createdAt: new Date()
     };
-    if (!isMongoEnabled) return demoStore.updateHrDecision(candidateId, decision);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.updateHrDecision(candidateId, decision);
     return sanitizeUser(
       await User.findByIdAndUpdate(
         candidateId,

@@ -22,6 +22,13 @@ const normalizeDocumentPayload = ({ candidateId, type, file, storedFile, extract
 export const candidateWorkflowService = {
   async getCandidateWorkspace(candidateId, candidate = null) {
     const resolvedCandidate = candidate || (await userService.findById(candidateId));
+    if (!resolvedCandidate) {
+      const fallbackCandidate = await userService.findByEmail(String(candidateId || "").toLowerCase(), false);
+      if (fallbackCandidate?.role === "candidate") {
+        return this.getCandidateWorkspace(fallbackCandidate._id || fallbackCandidate.id, fallbackCandidate);
+      }
+    }
+
     if (!resolvedCandidate || resolvedCandidate.role !== "candidate") {
       throw new ApiError(404, "Candidate not found");
     }

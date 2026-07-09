@@ -1,9 +1,28 @@
 import assert from "node:assert/strict";
+import mongoose from "mongoose";
 import test from "node:test";
+import { connectDB } from "../src/config/db.js";
+import { isMongoEnabled, setMongoEnabled } from "../src/config/env.js";
 import { candidateWorkflowService } from "../src/services/candidateWorkflow.service.js";
 import { hrWorkflowService } from "../src/services/hrWorkflow.service.js";
 import { userService } from "../src/services/user.service.js";
 import { isValidEmail, isValidHrAction, isValidResourceId } from "../src/utils/validators.js";
+
+test("connectDB falls back to demo mode when MongoDB is unavailable", async () => {
+  const originalConnect = mongoose.connect;
+  mongoose.connect = async () => {
+    throw new Error("MongoDB unavailable");
+  };
+
+  setMongoEnabled(true);
+  const result = await connectDB();
+
+  assert.equal(result, null);
+  assert.equal(isMongoEnabled, false);
+
+  mongoose.connect = originalConnect;
+  setMongoEnabled(true);
+});
 
 test("candidate workflow service assembles candidate workspace and report", async () => {
   const candidate = await userService.findByEmail("candidate@eduverify.ai");

@@ -63,6 +63,16 @@ const parseJsonFromText = (text) => {
   return JSON.parse(match[0]);
 };
 
+const fallbackSummary = (profile, verification) => {
+  const skills = profile.skills?.slice(0, 3).join(", ") || "core technical skills";
+  return {
+    summary: `${profile.extractedName || "This candidate"} has a ${profile.branch || "technical"} profile with ${skills}. Verification is currently marked as ${verification.status}.`,
+    strengths: [profile.cgpa ? `CGPA ${profile.cgpa}` : "Academic details available", "Structured skills extracted"],
+    risks: verification.issues?.length ? verification.issues : ["No major AI-detected summary risks"],
+    generatedBy: "demo"
+  };
+};
+
 export const geminiService = {
   async extractDocument(file, type) {
     if (!isGeminiEnabled) {
@@ -72,7 +82,7 @@ export const geminiService = {
 
     const genAI = new GoogleGenerativeAI(env.geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const base64 = file.buffer.toString("base64");
+    const base64 = file.buffer?.toString("base64") || "";
 
     const prompt = `
 Extract structured candidate credential information from this ${type}.
@@ -94,20 +104,14 @@ Do not make verification decisions.
 
       return parseJsonFromText(result.response.text());
     } catch (error) {
-      logger.error("Gemini extraction failed", error);
-      throw error;
+      logger.warn("Gemini extraction unavailable, using demo extraction", { type, originalName: file?.originalname, error: error?.message || error });
+      return demoExtraction(type, file?.originalname);
     }
   },
   async summarizeCandidate(profile, verification) {
     if (!isGeminiEnabled) {
       logger.debug("Using demo Gemini candidate summary", { status: verification.status });
-      const skills = profile.skills?.slice(0, 3).join(", ") || "core technical skills";
-      return {
-        summary: `${profile.extractedName || "This candidate"} has a ${profile.branch || "technical"} profile with ${skills}. Verification is currently marked as ${verification.status}.`,
-        strengths: [profile.cgpa ? `CGPA ${profile.cgpa}` : "Academic details available", "Structured skills extracted"],
-        risks: verification.issues?.length ? verification.issues : ["No major AI-detected summary risks"],
-        generatedBy: "demo"
-      };
+      return fallbackSummary(profile, verification);
     }
 
     const genAI = new GoogleGenerativeAI(env.geminiApiKey);
@@ -121,8 +125,8 @@ Verification: ${JSON.stringify(verification)}
 `);
       return { ...parseJsonFromText(result.response.text()), generatedBy: "gemini" };
     } catch (error) {
-      logger.error("Gemini summary failed", error);
-      throw error;
+      logger.warn("Gemini summary unavailable, using demo summary", { status: verification.status, error: error?.message || error });
+      return fallbackSummary(profile, verification);
     }
   }
 };

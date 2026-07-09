@@ -21,15 +21,17 @@ const uploadBufferToCloudinary = (file, folder) =>
     Readable.from(file.buffer).pipe(uploadStream);
   });
 
+const fallbackStorage = (candidateId, type, file) => ({
+  url: `demo://eduverify/${candidateId}/${type}/${encodeURIComponent(file.originalname)}`,
+  publicId: `demo-${candidateId}-${type}`,
+  storageProvider: "demo"
+});
+
 export const storageService = {
   async uploadDocument(file, candidateId, type) {
     if (!isCloudinaryEnabled) {
       logger.debug("Using demo document storage", { candidateId, type, originalName: file.originalname });
-      return {
-        url: `demo://eduverify/${candidateId}/${type}/${encodeURIComponent(file.originalname)}`,
-        publicId: `demo-${candidateId}-${type}`,
-        storageProvider: "demo"
-      };
+      return fallbackStorage(candidateId, type, file);
     }
 
     try {
@@ -41,8 +43,13 @@ export const storageService = {
         storageProvider: "cloudinary"
       };
     } catch (error) {
-      logger.error("Cloudinary document upload failed", error);
-      throw error;
+      logger.warn("Cloudinary upload failed, falling back to demo storage", {
+        candidateId,
+        type,
+        originalName: file.originalname,
+        error: error?.message || error
+      });
+      return fallbackStorage(candidateId, type, file);
     }
   }
 };

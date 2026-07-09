@@ -38,7 +38,10 @@ export const authService = {
     const isPasswordCorrect = await userService.verifyPassword(userWithPassword, password);
     if (!isPasswordCorrect) throw new ApiError(401, "Invalid email or password");
 
-    const user = await userService.findById(userWithPassword._id?.toString?.() || userWithPassword._id);
+    const userId = userWithPassword._id?.toString?.() || userWithPassword._id || userWithPassword.id;
+    const user = (await userService.findById(userId)) || userWithPassword;
+    if (!user?.email) throw new ApiError(401, "Invalid email or password");
+
     return publicAuthPayload(user);
   }
 };

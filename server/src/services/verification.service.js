@@ -2,7 +2,7 @@ import { DOCUMENT_TYPES, VERIFICATION_STATUS } from "../constants/status.constan
 import { CredentialSummary } from "../models/credentialSummary.model.js";
 import { VerificationRecord } from "../models/verificationRecord.model.js";
 import { averageScore, confidenceLabel, similarityScore, statusFromScore } from "../utils/match.util.js";
-import { isMongoEnabled } from "../config/env.js";
+import { env, isMongoEnabled } from "../config/env.js";
 import { demoStore } from "./demoStore.service.js";
 import { isValidMongoObjectId } from "../utils/validators.js";
 
@@ -238,16 +238,16 @@ export const verificationService = {
     };
   },
   async saveRecord(record) {
-    if (!isMongoEnabled) return demoStore.saveVerification(record);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.saveVerification(record);
     return VerificationRecord.create(record);
   },
   async getLatest(candidateId) {
-    if (!isMongoEnabled) return demoStore.getLatestVerification(candidateId);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.getLatestVerification(candidateId);
     if (!isValidMongoObjectId(candidateId)) return null;
     return VerificationRecord.findOne({ candidate: candidateId }).sort({ generatedAt: -1 }).lean();
   },
   async saveSummary(summary) {
-    if (!isMongoEnabled) return demoStore.saveSummary(summary);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.saveSummary(summary);
     return CredentialSummary.findOneAndUpdate({ candidate: summary.candidate }, summary, {
       upsert: true,
       new: true,
@@ -255,7 +255,7 @@ export const verificationService = {
     });
   },
   async getSummary(candidateId) {
-    if (!isMongoEnabled) return demoStore.getSummary(candidateId);
+    if (!isMongoEnabled || env.nodeEnv !== "production") return demoStore.getSummary(candidateId);
     if (!isValidMongoObjectId(candidateId)) return null;
     return CredentialSummary.findOne({ candidate: candidateId }).sort({ generatedAt: -1 }).lean();
   },

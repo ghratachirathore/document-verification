@@ -27,7 +27,11 @@ export const env = {
 };
 
 export const isTestEnv = env.nodeEnv === "test";
-export const isMongoEnabled = Boolean(env.mongoUri) && !isTestEnv;
+export let isMongoEnabled = Boolean(env.mongoUri) && !isTestEnv;
+
+export const setMongoEnabled = (enabled) => {
+  isMongoEnabled = enabled;
+};
 
 export const isCloudinaryEnabled = Boolean(
   env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret
